@@ -53,6 +53,12 @@ TEST_CASE("CanFrame to_string candump format") {
     CHECK_EQ(e.to_string(), std::string("18DAF110#AABB"));
 }
 
+TEST_CASE("CanFrame to_string omits payload for RTR frames") {
+    CanFrame f(0x123, 8, {0x11, 0x22, 0x33, 0x44, 0, 0, 0, 0});
+    f.rtr = true;
+    CHECK_EQ(f.to_string(), std::string("123#R"));  // remote frames carry no data
+}
+
 TEST_CASE("CanFrame CSV round-trip") {
     CanFrame f(0x7DF, 8, {0x02, 0x01, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00});
     f.timestamp_us = 1234567890;
