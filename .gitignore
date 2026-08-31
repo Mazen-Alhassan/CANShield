@@ -8,3 +8,5 @@ data/*.jsonl
 __pycache__/
 *.pyc
 analysis/*.png
+.cache/
+.clangd/
