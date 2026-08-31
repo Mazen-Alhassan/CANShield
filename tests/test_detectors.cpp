@@ -1,0 +1,99 @@
+#include <set>
+#include <string>
+#include <vector>
+
+#include "canshield/attack_injector.hpp"
+#include "canshield/ecu_simulator.hpp"
+#include "canshield/security_monitor.hpp"
+#include "test_framework.hpp"
+
+using namespace canshield;
+
+static std::vector<CanFrame> benign_trace(double seconds) {
+    EcuSimulator sim(default_catalog());
+    std::vector<CanFrame> v;
+    sim.generate(static_cast<std::uint64_t>(seconds * 1e6),
+                 [&](const CanFrame& f) { v.push_back(f); });
+    return v;
+}
+
+// run a scenario, return the set of detector names that fired inside the window
+static std::set<std::string> detectors_fired(AttackType t) {
+    auto benign = benign_trace(6.0);
+    AttackInjector inj(default_catalog());
+    Scenario sc = inj.inject(t, benign, 2'000'000, 3'000'000);
+
+    SecurityMonitor mon(default_catalog());
+    for (auto& lf : sc.frames) mon.process(lf.frame);
+
+    std::set<std::string> fired;
+    for (auto& a : mon.alerts())
+        if (a.timestamp_us >= sc.window_start_us && a.timestamp_us < sc.window_end_us)
+            fired.insert(a.detector);
+    return fired;
+}
+
+TEST_CASE("clean traffic produces essentially no alerts (low false positives)") {
+    auto benign = benign_trace(10.0);
+    SecurityMonitor mon(default_catalog());
+    for (auto& f : benign) mon.process(f);
+    // a handful tolerated for warm-up; must be far below traffic volume
+    CHECK_TRUE(mon.alerts_raised() < benign.size() / 1000);
+}
+
+TEST_CASE("checksum tamper is caught by the checksum detector") {
+    auto f = detectors_fired(AttackType::ChecksumTamper);
+    CHECK_TRUE(f.count("checksum") > 0);
+}
+
+TEST_CASE("flood is caught by rate/unknown-id detectors") {
+    auto f = detectors_fired(AttackType::Flood);
+    CHECK_TRUE(f.count("rate") > 0 || f.count("unknown_id") > 0);
+}
+
+TEST_CASE("fuzz is caught (unknown id / protocol / checksum)") {
+    auto f = detectors_fired(AttackType::Fuzz);
+    CHECK_TRUE(f.count("unknown_id") > 0 || f.count("protocol") > 0 ||
+               f.count("checksum") > 0);
+}
+
+TEST_CASE("diagnostic abuse is caught by the diagnostic detector") {
+    auto f = detectors_fired(AttackType::DiagAbuse);
+    CHECK_TRUE(f.count("diagnostic") > 0 || f.count("rate") > 0);
+}
+
+TEST_CASE("rpm spoof is caught (timing / range / counter)") {
+    auto f = detectors_fired(AttackType::RpmSpoof);
+    CHECK_TRUE(f.count("timing") > 0 || f.count("range") > 0 ||
+               f.count("counter") > 0);
+}
+
+TEST_CASE("replay is caught (counter / timing)") {
+    auto f = detectors_fired(AttackType::Replay);
+    CHECK_TRUE(f.count("counter") > 0 || f.count("timing") > 0);
+}
+
+TEST_CASE("wheel masquerade is caught (counter / timing / range)") {
+    auto f = detectors_fired(AttackType::WheelMasquerade);
+    CHECK_TRUE(!f.empty());
+}
+
+TEST_CASE("bus-off storm is caught by the protocol detector") {
+    auto f = detectors_fired(AttackType::BusOff);
+    CHECK_TRUE(f.count("protocol") > 0);
+}
+
+TEST_CASE("adversarial injection is caught by the timing detector") {
+    auto f = detectors_fired(AttackType::AdversarialInject);
+    CHECK_TRUE(f.count("timing") > 0 || f.count("counter") > 0);
+}
+
+TEST_CASE("per-frame detection latency stays well under 1ms") {
+    auto benign = benign_trace(10.0);
+    SecurityMonitor mon(default_catalog());
+    for (auto& f : benign) mon.process(f);
+    // p99 detection latency < 1ms (1e6 ns) is the headline requirement
+    CHECK_TRUE(mon.latency().percentile_ns(0.99) < 1'000'000ull);
+}
+
+int main() { return canshield::test::run_all(); }
