@@ -6,6 +6,6 @@ data/*
 !data/.gitkeep
 __pycache__/
 *.pyc
-analysis/*.png
 .cache/
 .clangd/
+.venv/
