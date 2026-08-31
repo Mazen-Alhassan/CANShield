@@ -1,7 +1,12 @@
 # adding photos / screenshots
 
 Put images in `docs/images/` and link them from the README so the repo has something visual.
-Here's what's worth capturing and how.
+
+**Already in the repo** (rendered from real program output): `docs/images/demo.gif` (the live
+monitor catching a spoof) and `docs/images/eval-run.png` (the evaluation campaign), both wired
+into the README. Add your own below or replace these.
+
+Here's what else is worth capturing and how.
 
 ## 1. software screenshots (easiest, do these first)
 
