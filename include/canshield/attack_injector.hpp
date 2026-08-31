@@ -26,6 +26,12 @@ enum class AttackType {
 
 const char* to_string(AttackType t);
 
+// parse an attack name (as printed by to_string); sets *ok=false if unknown.
+AttackType attack_from_string(const std::string& s, bool* ok = nullptr);
+
+// all attack types except None, for iterating scenarios.
+std::vector<AttackType> all_attacks();
+
 struct LabeledFrame {
     CanFrame frame;
     AttackType label = AttackType::None;  // None => benign ground truth

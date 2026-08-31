@@ -2,8 +2,7 @@ build/
 *.o
 *.a
 .DS_Store
-data/*.csv
-data/*.jsonl
+data/*
 !data/.gitkeep
 __pycache__/
 *.pyc

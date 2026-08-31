@@ -1,6 +1,7 @@
 #include "canshield/detectors.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include "canshield/proprietary_protocol.hpp"
@@ -142,6 +143,44 @@ void RateDetector::inspect(const CanFrame& f, std::vector<Alert>& out) {
                                std::to_string(w.ts.size()) + " in window",
                            Severity::Critical});
         }
+    }
+}
+
+void PhysicsConsistencyDetector::inspect(const CanFrame& f,
+                                         std::vector<Alert>& out) {
+    if (f.error) return;
+    // cache the latest physical values from the relevant ids
+    if (f.id == 0x400 && f.dlc == 4) {  // IC_VehicleSpeed
+        vehicle_speed_ = f.get_be(0, 2) * 0.01;
+        have_speed_ = true;
+    } else if (f.id == 0x200 && f.dlc == 8) {  // ABS wheel speeds (four 12-bit)
+        double fl = ((f.get_be(0, 2) >> 4) & 0xFFF) * 0.0625;
+        std::uint64_t raw_fr = ((f.data[1] & 0x0F) << 8) | f.data[2];
+        double fr = raw_fr * 0.0625;
+        mean_wheel_ = (fl + fr) / 2.0;  // front axle is enough for the check
+        have_wheel_ = true;
+    } else if (f.id == 0x100 && f.dlc == 8) {  // engine rpm
+        rpm_ = f.get_be(0, 2) * 0.25;
+        have_rpm_ = true;
+    } else {
+        return;
+    }
+
+    // wheel speed vs vehicle speed must track within tolerance
+    if (have_speed_ && have_wheel_ &&
+        std::abs(mean_wheel_ - vehicle_speed_) > 18.0) {
+        char b[96];
+        std::snprintf(b, sizeof(b),
+                      "wheel speed %.1f km/h disagrees with vehicle speed %.1f km/h",
+                      mean_wheel_, vehicle_speed_);
+        out.push_back({f.timestamp_us, f.id, name(), b, Severity::High});
+    }
+    // engine racing while the car is not moving -> implausible
+    if (have_rpm_ && have_speed_ && have_wheel_ && rpm_ > 4000.0 &&
+        vehicle_speed_ < 5.0 && mean_wheel_ < 5.0) {
+        char b[96];
+        std::snprintf(b, sizeof(b), "rpm %.0f implausible at standstill", rpm_);
+        out.push_back({f.timestamp_us, f.id, name(), b, Severity::High});
     }
 }
 

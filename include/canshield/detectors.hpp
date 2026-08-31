@@ -117,6 +117,19 @@ private:
     std::unordered_map<std::uint32_t, Win> win_;
 };
 
+// cross-signal plausibility: wheel speeds must agree with vehicle speed, and
+// engine rpm must be plausible for the current motion. catches masquerade /
+// spoofing that is otherwise structurally perfect (valid checksum + counter +
+// timing) but physically inconsistent with the rest of the bus.
+class PhysicsConsistencyDetector : public IDetector {
+public:
+    const char* name() const override { return "physics"; }
+    void inspect(const CanFrame& f, std::vector<Alert>& out) override;
+private:
+    bool have_speed_ = false, have_wheel_ = false, have_rpm_ = false;
+    double vehicle_speed_ = 0, mean_wheel_ = 0, rpm_ = 0;
+};
+
 // flags diagnostic ids appearing at abnormal rate (diagnostic abuse while
 // driving); diagnostics are normally silent/occasional.
 class DiagnosticDetector : public IDetector {

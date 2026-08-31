@@ -23,6 +23,25 @@ const char* to_string(AttackType t) {
     return "unknown";
 }
 
+std::vector<AttackType> all_attacks() {
+    return {AttackType::RpmSpoof,        AttackType::Replay,
+            AttackType::Flood,           AttackType::Fuzz,
+            AttackType::DiagAbuse,       AttackType::WheelMasquerade,
+            AttackType::SpeedFreeze,     AttackType::ChecksumTamper,
+            AttackType::BusOff,          AttackType::AdversarialInject};
+}
+
+AttackType attack_from_string(const std::string& s, bool* ok) {
+    for (AttackType t : all_attacks()) {
+        if (s == to_string(t)) {
+            if (ok) *ok = true;
+            return t;
+        }
+    }
+    if (ok) *ok = false;
+    return AttackType::None;
+}
+
 CanFrame AttackInjector::forge(std::uint32_t id, std::uint8_t counter,
                                bool valid_integrity) {
     CanFrame f;

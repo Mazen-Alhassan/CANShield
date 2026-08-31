@@ -26,6 +26,7 @@ SecurityMonitor::SecurityMonitor(MessageCatalog cat, bool with_defaults)
         add_detector(std::make_unique<TimingDetector>(cat_));
         add_detector(std::make_unique<RangeDetector>(cat_));
         add_detector(std::make_unique<RateDetector>(cat_));
+        add_detector(std::make_unique<PhysicsConsistencyDetector>());
         add_detector(std::make_unique<DiagnosticDetector>());
     }
 }
