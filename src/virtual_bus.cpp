@@ -1,4 +1,3 @@
-// CANShield - virtual_bus.cpp
 #include "canshield/virtual_bus.hpp"
 
 #include <algorithm>
@@ -8,8 +7,7 @@
 
 namespace canshield {
 
-// One attached node. Holds a thread-safe inbound queue that the bus pushes into
-// and receive() pops from.
+// one attached node with its own thread-safe inbound queue
 class VirtualCanEndpoint : public ICanTransport,
                            public std::enable_shared_from_this<VirtualCanEndpoint> {
 public:
@@ -21,10 +19,8 @@ public:
     bool send(const CanFrame& frame) override {
         if (closed_) return false;
         if (!frame.is_well_formed() && !frame.error) {
-            // Allow deliberately malformed frames only when flagged as error
-            // frames; otherwise reject so bugs surface. Attackers craft
-            // protocol anomalies via valid-but-suspicious frames, not by
-            // violating the frame's structural invariants here.
+            // reject structurally invalid frames (unless marked error) so bugs
+            // surface. attacks use valid-but-suspicious frames, not broken ones.
             return false;
         }
         auto bus = bus_.lock();
@@ -60,7 +56,7 @@ public:
         qcv_.notify_all();
     }
 
-    // Called by the bus (under no endpoint lock) to deliver a frame.
+    // called by the bus to deliver a frame
     void enqueue(const CanFrame& frame) {
         {
             std::lock_guard<std::mutex> lk(qmtx_);
@@ -89,13 +85,13 @@ TransportPtr VirtualCanBus::attach(const std::string& node_name) {
 
 void VirtualCanBus::broadcast(const CanFrame& frame, VirtualCanEndpoint* sender) {
     CanFrame stamped = frame;
-    // The bus is the serialization point: stamp arrival time here so every
-    // receiver observes a single consistent timestamp and total ordering.
+    // bus is the serialization point: stamp here so all receivers agree on
+    // timestamp and ordering
     stamped.timestamp_us = now_micros();
     frame_count_.fetch_add(1);
 
-    // Snapshot live endpoints under the lock, then deliver outside it so a slow
-    // receiver cannot block the sender while holding the bus mutex.
+    // snapshot endpoints under the lock, deliver outside it so a slow receiver
+    // can't block the sender while holding the bus mutex
     std::vector<std::shared_ptr<VirtualCanEndpoint>> live;
     {
         std::lock_guard<std::mutex> lk(mtx_);

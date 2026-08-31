@@ -1,6 +1,3 @@
-// runs all 10 attack scenarios through the IDS, scores detection with time
-// buckets, and writes precision/recall/F1 + latency reports.
-
 #include <cstdio>
 #include <fstream>
 #include <vector>

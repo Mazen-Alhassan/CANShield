@@ -1,6 +1,3 @@
-// runs the IDS over a csv trace (offline) or a live socketcan interface, prints
-// alerts as they fire, and reports a detection + latency summary at the end.
-
 #include <atomic>
 #include <csignal>
 #include <cstdio>

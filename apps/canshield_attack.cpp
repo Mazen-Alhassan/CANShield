@@ -1,6 +1,3 @@
-// generates a benign trace with one attack overlaid, written as a labeled csv
-// (last column is the ground-truth attack label). feed it to canshield_monitor.
-
 #include <cstdio>
 #include <fstream>
 

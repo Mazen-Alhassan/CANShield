@@ -1,4 +1,3 @@
-// CANShield - socketcan_transport.cpp
 #include "canshield/socketcan_transport.hpp"
 
 #ifdef CANSHIELD_HAVE_SOCKETCAN
@@ -38,7 +37,7 @@ bool SocketCanTransport::open(const std::string& ifname, bool loopback) {
         return false;
     }
 
-    // Receive own transmitted frames when loopback is requested (lets a single
+    // receive own transmitted frames when loopback is requested (lets a single
     // process both inject and monitor for testing/self-checks).
     int recv_own = loopback ? 1 : 0;
     ::setsockopt(fd_, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, &recv_own,

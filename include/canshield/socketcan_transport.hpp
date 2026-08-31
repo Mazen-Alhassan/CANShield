@@ -1,8 +1,3 @@
-// CANShield - socketcan_transport.hpp
-// Real CAN transport over Linux SocketCAN. Used on the Raspberry Pi target
-// against a virtual interface (vcan0) or a CAN HAT (can0). On non-Linux hosts
-// this class still compiles but open() reports that SocketCAN is unavailable,
-// so the rest of the codebase links uniformly.
 #ifndef CANSHIELD_SOCKETCAN_TRANSPORT_HPP
 #define CANSHIELD_SOCKETCAN_TRANSPORT_HPP
 
@@ -17,7 +12,7 @@ public:
     SocketCanTransport() = default;
     ~SocketCanTransport() override { close(); }
 
-    // Bind to a SocketCAN interface (e.g. "vcan0", "can0"). Returns false and
+    // bind to a SocketCAN interface (e.g. "vcan0", "can0"). Returns false and
     // sets last_error() on failure (interface missing, no permission, or not
     // built with SocketCAN support). When loopback is true the socket also
     // receives frames it transmits, which the IDS uses to self-monitor.
@@ -28,7 +23,7 @@ public:
     std::string name() const override { return ifname_.empty() ? "socketcan:<unbound>" : ifname_; }
     void close() override;
 
-    // True on platforms/builds where SocketCAN is compiled in.
+    // true on platforms/builds where SocketCAN is compiled in.
     static bool available();
 
     const std::string& last_error() const { return last_error_; }

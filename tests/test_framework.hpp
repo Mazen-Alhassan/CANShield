@@ -1,11 +1,3 @@
-// CANShield - test_framework.hpp
-// A tiny, dependency-free unit-test harness. We deliberately avoid pulling in
-// GoogleTest/Catch2 so the project builds offline on a fresh Raspberry Pi with
-// nothing but a compiler and CMake.
-//
-// Usage:
-//   TEST_CASE("name") { CHECK(cond); CHECK_EQ(a, b); }
-//   int main() { return canshield::test::run_all(); }
 #ifndef CANSHIELD_TEST_FRAMEWORK_HPP
 #define CANSHIELD_TEST_FRAMEWORK_HPP
 

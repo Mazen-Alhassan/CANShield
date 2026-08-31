@@ -1,4 +1,3 @@
-// CANShield - test_virtual_bus.cpp
 #include <atomic>
 #include <thread>
 
@@ -91,7 +90,7 @@ TEST_CASE("Concurrent producers deliver every frame to a consumer") {
 }
 
 TEST_CASE("SocketCanTransport availability matches build platform") {
-    // Just assert it links and reports a coherent state; real bus I/O is
+    // just assert it links and reports a coherent state; real bus I/O is
     // exercised on the Raspberry Pi target with vcan0.
     (void)SocketCanTransport::available();
     CHECK_TRUE(true);

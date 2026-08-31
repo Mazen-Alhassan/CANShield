@@ -1,4 +1,3 @@
-// CANShield - can_frame.cpp
 #include "canshield/can_frame.hpp"
 
 #include <chrono>

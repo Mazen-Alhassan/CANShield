@@ -1,5 +1,3 @@
-// generates normal vehicle traffic, either printed or written to a csv trace
-
 #include <cstdio>
 #include <fstream>
 

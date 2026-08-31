@@ -1,4 +1,3 @@
-// CANShield - test_can_frame.cpp
 #include "canshield/can_frame.hpp"
 #include "test_framework.hpp"
 

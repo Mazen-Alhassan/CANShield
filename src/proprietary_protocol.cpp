@@ -1,4 +1,3 @@
-// CANShield - proprietary_protocol.cpp
 #include "canshield/proprietary_protocol.hpp"
 
 namespace canshield {
