@@ -11,20 +11,20 @@ socketcan (vcan0/can0). same code either way.
 
 ## what it does
 
-- simulates the ECUs (engine, abs, body, etc) with a little physics model so the numbers make
+simulates the ECUs (engine, abs, body, etc) with a little physics model so the numbers make
   sense (rpm goes up with speed and so on)
-- made up my own "proprietary" message format with a rolling counter + checksum and reverse
+made up my own "proprietary" message format with a rolling counter + checksum and reverse
   engineered it, writeup is in docs/protocol-reverse-engineering.md
-- 10 attacks: spoofing, replay, flooding, fuzzing, diagnostic abuse, ecu masquerade, speed
+10 attacks: spoofing, replay, flooding, fuzzing, diagnostic abuse, ecu masquerade, speed
   freeze, checksum tamper, bus-off, and an adversarial injection one
-- the monitor has 9 detectors (timing, rate, checksum, counter, range, unknown id, protocol,
+the monitor has 9 detectors (timing, rate, checksum, counter, range, unknown id, protocol,
   physics, diagnostic) and times how long each frame takes to check
-- small offensive bit too: a uds securityaccess (seed/key) exploit that unlocks a fake
+small offensive bit too: a uds securityaccess (seed/key) exploit that unlocks a fake
   diagnostic ecu, writeup in docs/uds-securityaccess-attack.md
 
 ## results
 
-i ran all 10 attacks over about 1.17 million frames. it caught all 10.
+ran all 10 attacks over about 1.17 million frames. caught all 10.
 
 - precision ~1.0, recall ~0.96, f1 ~0.98
 - per frame checking latency was around 1 microsecond at p99 (i was aiming for under 1 ms)
@@ -75,7 +75,7 @@ scripts/setup_vcan.sh, build, run the sim in one terminal and
 
 ## folders
 
-- include/ and src/ is the actual library
+- include/ and src/ is th library
 - apps/ is the command line tools
 - tests/ is the unit tests
 - docs/ has the writeups
