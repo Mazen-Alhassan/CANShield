@@ -19,6 +19,8 @@ socketcan (vcan0/can0). same code either way.
   freeze, checksum tamper, bus-off, and an adversarial injection one
 - the monitor has 9 detectors (timing, rate, checksum, counter, range, unknown id, protocol,
   physics, diagnostic) and times how long each frame takes to check
+- small offensive bit too: a uds securityaccess (seed/key) exploit that unlocks a fake
+  diagnostic ecu, writeup in docs/uds-securityaccess-attack.md
 
 ## results
 
@@ -50,6 +52,12 @@ quick demo (make an attack file then run the monitor on it):
 ```sh
 ./build/canshield_attack --attack rpm_spoof --out data/trace.csv
 ./build/canshield_monitor --in data/trace.csv
+```
+
+offensive demo (recover a diagnostic ecu's seed/key and unlock it):
+
+```sh
+./build/canshield_exploit
 ```
 
 charts need matplotlib:
