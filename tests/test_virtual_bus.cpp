@@ -46,6 +46,25 @@ TEST_CASE("receive() honors non-blocking and timeout modes") {
     CHECK_FALSE(a->receive(got, 5000));   // 5ms timeout, empty
 }
 
+TEST_CASE("total_frames() counts delivered frames and ignores malformed sends") {
+    auto bus = VirtualCanBus::create();
+    auto a = bus->attach("a");
+    auto b = bus->attach("b");
+
+    CHECK_EQ(bus->total_frames(), std::uint64_t(0));
+
+    CanFrame good(0x123, 2, {0xDE, 0xAD});
+    CHECK_TRUE(a->send(good));
+    CHECK_EQ(bus->total_frames(), std::uint64_t(1));
+
+    CanFrame bad(0x123, 9, {});  // dlc > 8 -> not well-formed
+    CHECK_FALSE(a->send(bad));
+    CHECK_EQ(bus->total_frames(), std::uint64_t(1));  // rejected, not counted
+
+    CanFrame got;
+    CHECK_TRUE(b->receive(got, 100000));
+}
+
 TEST_CASE("Closing an endpoint removes it from the bus") {
     auto bus = VirtualCanBus::create();
     auto a = bus->attach("a");
