@@ -44,6 +44,15 @@ TEST_CASE("CanFrame out-of-bounds access is safe") {
     CHECK_EQ(f.get_be(7, 4), 0ull);  // out of bounds read -> 0
 }
 
+TEST_CASE("CanFrame zero-length get_be/set_be is a no-op") {
+    CanFrame f;
+    f.dlc = 8;
+    f.set_be(2, 4, 0x11223344);
+    f.set_be(2, 0, 0xFFFFFFFF);  // len==0 -> no-op, must not touch data[2..6)
+    CHECK_EQ(f.get_be(2, 4), 0x11223344ull);
+    CHECK_EQ(f.get_be(2, 0), 0ull);  // len==0 read -> 0
+}
+
 TEST_CASE("CanFrame to_string candump format") {
     CanFrame f(0x123, 4, {0x11, 0x22, 0x33, 0x44});
     CHECK_EQ(f.to_string(), std::string("123#11223344"));
