@@ -12,7 +12,7 @@ std::string f2(double v) {
     std::snprintf(b, sizeof(b), "%.3f", v);
     return b;
 }
-std::string us_to_ms(double ns) {
+std::string ns_to_us(double ns) {
     char b[32];
     std::snprintf(b, sizeof(b), "%.1f", ns / 1000.0);  // ns -> us
     return b;
@@ -49,9 +49,9 @@ std::string render_markdown(const Campaign& c) {
     o << "| scenario | mean | p50 | p99 | p99.9 | max |\n";
     o << "|---|--:|--:|--:|--:|--:|\n";
     for (auto& r : c.results) {
-        o << "| " << r.attack << " | " << us_to_ms(r.lat_mean_ns) << " | "
-          << us_to_ms(r.lat_p50_ns) << " | " << us_to_ms(r.lat_p99_ns) << " | "
-          << us_to_ms(r.lat_p999_ns) << " | " << us_to_ms(r.lat_max_ns)
+        o << "| " << r.attack << " | " << ns_to_us(r.lat_mean_ns) << " | "
+          << ns_to_us(r.lat_p50_ns) << " | " << ns_to_us(r.lat_p99_ns) << " | "
+          << ns_to_us(r.lat_p999_ns) << " | " << ns_to_us(r.lat_max_ns)
           << " |\n";
     }
     o << "\n_p99 detection latency stays well under the 1000 us (1 ms) budget "
