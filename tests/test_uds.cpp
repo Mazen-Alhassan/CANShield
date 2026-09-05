@@ -16,6 +16,12 @@ TEST_CASE("single frame pack/parse round-trip") {
     CHECK_EQ(p[1], 0x01);
 }
 
+TEST_CASE("empty payload pack/parse round-trip is a no-op") {
+    auto f = uds::pack_single_frame(0x7E0, {});
+    auto p = uds::parse_single_frame(f);
+    CHECK_EQ(p.size(), std::size_t(0));
+}
+
 TEST_CASE("recovered key algorithm matches the ecu") {
     // full unlock flow over a virtual bus
     auto bus = VirtualCanBus::create();
