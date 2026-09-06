@@ -22,6 +22,16 @@ TEST_CASE("empty payload pack/parse round-trip is a no-op") {
     CHECK_EQ(p.size(), std::size_t(0));
 }
 
+TEST_CASE("max single-frame payload (7 bytes) round-trips fully") {
+    // a single frame has 1 PCI byte + 7 data bytes, so 7 is the largest
+    // payload that survives the round-trip without truncation
+    std::vector<std::uint8_t> payload{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    auto f = uds::pack_single_frame(0x7E0, payload);
+    auto p = uds::parse_single_frame(f);
+    CHECK_EQ(p.size(), payload.size());
+    for (std::size_t i = 0; i < payload.size(); ++i) CHECK_EQ(p[i], payload[i]);
+}
+
 TEST_CASE("recovered key algorithm matches the ecu") {
     // full unlock flow over a virtual bus
     auto bus = VirtualCanBus::create();
