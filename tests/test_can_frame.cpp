@@ -81,6 +81,20 @@ TEST_CASE("CanFrame CSV round-trip") {
     CHECK_TRUE(f == g);
 }
 
+TEST_CASE("CanFrame CSV round-trip preserves extended id and RTR") {
+    CanFrame f(0x18DAF110, 8, {0, 0, 0, 0, 0, 0, 0, 0}, /*extended_=*/true);
+    f.rtr = true;
+    f.timestamp_us = 42;
+    std::string csv = f.to_csv();
+
+    CanFrame g;
+    CHECK_TRUE(CanFrame::from_csv(csv, g));
+    CHECK_EQ(g.id, 0x18DAF110u);
+    CHECK_TRUE(g.extended);
+    CHECK_TRUE(g.rtr);
+    CHECK_TRUE(f == g);
+}
+
 TEST_CASE("CanFrame CSV rejects malformed input") {
     CanFrame g;
     CHECK_FALSE(CanFrame::from_csv("only,three,fields", g));
