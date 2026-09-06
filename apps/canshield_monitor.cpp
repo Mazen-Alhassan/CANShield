@@ -39,13 +39,14 @@ int main(int argc, char** argv) {
     if (args.has("--help")) {
         std::printf(
             "usage: canshield_monitor (--in trace.csv | --iface vcan0) "
-            "[--max-print N]\n");
+            "[--max-print N] [--summary-only]\n");
         return 0;
     }
     std::signal(SIGINT, on_sigint);
 
     SecurityMonitor mon(default_catalog());
-    long max_print = args.geti("--max-print", 40);
+    bool summary_only = args.has("--summary-only");
+    long max_print = summary_only ? 0 : args.geti("--max-print", 40);
     long printed = 0;
     auto sink = [&](const Alert& a) {
         if (printed < max_print) {
