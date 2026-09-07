@@ -24,6 +24,22 @@ TEST_CASE("12-bit signals pack without clobbering neighbors") {
     CHECK_TRUE(std::abs(fr.extract_phys(f) - 50.0) < 0.0625);
 }
 
+TEST_CASE("pack_phys clamps a value above the field width to its max raw") {
+    SignalDef s{"Tiny", 0, 4, 1.0, 0.0, 0.0, 100.0, ""};  // 4 bits -> max raw 15
+    CanFrame f;
+    f.dlc = 8;
+    s.pack_phys(f, 999.0);  // way over what 4 bits can represent
+    CHECK_TRUE(std::abs(s.extract_phys(f) - 15.0) < 1e-9);
+}
+
+TEST_CASE("pack_phys clamps a value below the offset to raw zero") {
+    SignalDef s{"Offset", 0, 8, 1.0, 10.0, 10.0, 265.0, ""};  // phys = raw + 10
+    CanFrame f;
+    f.dlc = 8;
+    s.pack_phys(f, 5.0);  // below the offset -> negative raw, clamped to 0
+    CHECK_TRUE(std::abs(s.extract_phys(f) - 10.0) < 1e-9);
+}
+
 TEST_CASE("proprietary checksum detects a single-bit payload change") {
     CanFrame f(0x100, 8, {0x10, 0x20, 0x30, 0x40, 0x50, 0x00, 0x00, 0x00});
     proto::apply_integrity(f, 8, 3);
