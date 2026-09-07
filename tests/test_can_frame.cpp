@@ -102,4 +102,33 @@ TEST_CASE("CanFrame CSV rejects malformed input") {
     CHECK_FALSE(CanFrame::from_csv("1,123,0,2,0,0,ABC", g));    // odd hex len
 }
 
+TEST_CASE("CanFrame CSV round-trip with dlc==0 (no payload field)") {
+    CanFrame f(0x7DF, 0, {});
+    f.timestamp_us = 99;
+    std::string csv = f.to_csv();
+    CHECK_EQ(csv, std::string("99,7DF,0,0,0,0,"));
+
+    CanFrame g;
+    CHECK_TRUE(CanFrame::from_csv(csv, g));
+    CHECK_EQ(g.dlc, 0);
+    CHECK_TRUE(f == g);
+}
+
+TEST_CASE("CanFrame to_string with dlc==0 has no payload bytes") {
+    CanFrame f(0x7DF, 0, {});
+    CHECK_EQ(f.to_string(), std::string("7DF#"));
+}
+
+TEST_CASE("CanFrame CSV round-trip preserves the max 29-bit extended id") {
+    CanFrame f(0x1FFFFFFF, 1, {0xFF}, /*extended_=*/true);
+    f.timestamp_us = 7;
+    std::string csv = f.to_csv();
+
+    CanFrame g;
+    CHECK_TRUE(CanFrame::from_csv(csv, g));
+    CHECK_EQ(g.id, 0x1FFFFFFFu);
+    CHECK_TRUE(g.is_well_formed());
+    CHECK_TRUE(f == g);
+}
+
 int main() { return canshield::test::run_all(); }
