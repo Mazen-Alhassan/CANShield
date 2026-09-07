@@ -39,22 +39,37 @@ int main(int argc, char** argv) {
     if (args.has("--help")) {
         std::printf(
             "usage: canshield_monitor (--in trace.csv | --iface vcan0) "
-            "[--max-print N]\n");
+            "[--max-print N] [--json]\n");
         return 0;
     }
     std::signal(SIGINT, on_sigint);
 
     SecurityMonitor mon(default_catalog());
     long max_print = args.geti("--max-print", 40);
+    bool json_out = args.has("--json");
     long printed = 0;
     auto sink = [&](const Alert& a) {
         if (printed < max_print) {
-            std::printf("[ALERT] t=%-10llu id=0x%-3X %-11s %-9s %s\n",
-                        (unsigned long long)a.timestamp_us, a.can_id,
-                        a.detector.c_str(), to_string(a.severity),
-                        a.reason.c_str());
+            if (json_out) {
+                std::string reason;
+                reason.reserve(a.reason.size());
+                for (char c : a.reason) {
+                    if (c == '"' || c == '\\') reason += '\\';
+                    reason += c;
+                }
+                std::printf(
+                    "{\"t\":%llu,\"id\":\"0x%X\",\"detector\":\"%s\","
+                    "\"severity\":\"%s\",\"reason\":\"%s\"}\n",
+                    (unsigned long long)a.timestamp_us, a.can_id,
+                    a.detector.c_str(), to_string(a.severity), reason.c_str());
+            } else {
+                std::printf("[ALERT] t=%-10llu id=0x%-3X %-11s %-9s %s\n",
+                            (unsigned long long)a.timestamp_us, a.can_id,
+                            a.detector.c_str(), to_string(a.severity),
+                            a.reason.c_str());
+            }
             ++printed;
-            if (printed == max_print)
+            if (printed == max_print && !json_out)
                 std::printf("... (further alerts suppressed; see summary)\n");
         }
     };
