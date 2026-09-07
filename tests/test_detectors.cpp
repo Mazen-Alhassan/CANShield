@@ -96,4 +96,47 @@ TEST_CASE("per-frame detection latency stays well under 1ms") {
     CHECK_TRUE(mon.latency().percentile_ns(0.99) < 1'000'000ull);
 }
 
+// the tests above run whole attack scenarios through the full chain; these
+// exercise individual detectors directly, in isolation, against hand-built
+// frames so each detector's own trigger condition is pinned down.
+
+TEST_CASE("ProtocolDetector flags a dlc mismatch against the catalog") {
+    MessageCatalog cat = default_catalog();
+    ProtocolDetector pd(cat);
+    CanFrame f;
+    f.id = 0x100;  // PT_EngineData expects dlc 8
+    f.dlc = 4;
+    std::vector<Alert> out;
+    pd.inspect(f, out);
+    CHECK_TRUE(!out.empty());
+}
+
+TEST_CASE("RangeDetector flags a signal value outside its physical range") {
+    MessageCatalog cat = default_catalog();
+    RangeDetector rd(cat);
+    CanFrame f;
+    f.id = 0x100;
+    f.dlc = 8;
+    f.set_be(0, 2, 40000);  // EngineRPM raw*0.25 = 10000, above the 8000 max
+    std::vector<Alert> out;
+    rd.inspect(f, out);
+    CHECK_TRUE(!out.empty());
+}
+
+TEST_CASE("TimingDetector flags an arrival faster than tolerance allows") {
+    MessageCatalog cat = default_catalog();
+    TimingDetector td(cat);
+    CanFrame f;
+    f.id = 0x400;  // IC_VehicleSpeed, 20ms period
+    f.dlc = 4;
+    std::vector<Alert> out;
+    f.timestamp_us = 0;
+    td.inspect(f, out);
+    CHECK_TRUE(out.empty());  // no prior arrival to compare against yet
+
+    f.timestamp_us = 1000;  // 1ms later, well under the 10ms tolerance floor
+    td.inspect(f, out);
+    CHECK_TRUE(!out.empty());
+}
+
 int main() { return canshield::test::run_all(); }
