@@ -39,14 +39,12 @@ int main(int argc, char** argv) {
     if (args.has("--help")) {
         std::printf(
             "usage: canshield_monitor (--in trace.csv | --iface vcan0) "
-            "[--max-print N] [--json]\n");
-            "[--max-print N] [--summary-only]\n");
+            "[--max-print N] [--json] [--summary-only]\n");
         return 0;
     }
     std::signal(SIGINT, on_sigint);
 
     SecurityMonitor mon(default_catalog());
-    long max_print = args.geti("--max-print", 40);
     bool json_out = args.has("--json");
     bool summary_only = args.has("--summary-only");
     long max_print = summary_only ? 0 : args.geti("--max-print", 40);
