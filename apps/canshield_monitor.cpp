@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <string>
 
 #include "canshield/cli.hpp"
@@ -39,12 +40,30 @@ int main(int argc, char** argv) {
     if (args.has("--help")) {
         std::printf(
             "usage: canshield_monitor (--in trace.csv | --iface vcan0) "
-            "[--max-print N] [--json] [--summary-only]\n");
+            "[--max-print N] [--json] [--summary-only] [--rate-window-ms N] "
+            "[--rate-burst F] [--diag-window-ms N] [--diag-max N]\n");
         return 0;
     }
     std::signal(SIGINT, on_sigint);
 
-    SecurityMonitor mon(default_catalog());
+    std::uint64_t rate_window_us =
+        static_cast<std::uint64_t>(args.geti("--rate-window-ms", 100)) * 1000;
+    double rate_burst = args.getf("--rate-burst", 3.0);
+    std::uint64_t diag_window_us =
+        static_cast<std::uint64_t>(args.geti("--diag-window-ms", 1000)) * 1000;
+    int diag_max = static_cast<int>(args.geti("--diag-max", 20));
+
+    SecurityMonitor mon(default_catalog(), /*with_defaults=*/false);
+    const MessageCatalog& cat = mon.catalog();
+    mon.add_detector(std::make_unique<UnknownIdDetector>(cat));
+    mon.add_detector(std::make_unique<ProtocolDetector>(cat));
+    mon.add_detector(std::make_unique<ChecksumDetector>(cat));
+    mon.add_detector(std::make_unique<CounterDetector>(cat));
+    mon.add_detector(std::make_unique<TimingDetector>(cat));
+    mon.add_detector(std::make_unique<RangeDetector>(cat));
+    mon.add_detector(std::make_unique<RateDetector>(cat, rate_window_us, rate_burst));
+    mon.add_detector(std::make_unique<PhysicsConsistencyDetector>());
+    mon.add_detector(std::make_unique<DiagnosticDetector>(diag_window_us, diag_max));
     bool json_out = args.has("--json");
     bool summary_only = args.has("--summary-only");
     long max_print = summary_only ? 0 : args.geti("--max-print", 40);

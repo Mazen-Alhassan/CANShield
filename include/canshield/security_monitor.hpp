@@ -48,6 +48,10 @@ public:
         detectors_.push_back(std::move(d));
     }
 
+    // the catalog this monitor owns, for callers building their own detector
+    // chain (e.g. with custom detector parameters) via with_defaults=false.
+    const MessageCatalog& catalog() const { return cat_; }
+
     // run one frame through the chain. returns alerts raised for this frame.
     // records detection latency and (if enabled) stores alerts / calls sink.
     std::size_t process(const CanFrame& f);
