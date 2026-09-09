@@ -4,6 +4,7 @@
 
 #include "canshield/attack_injector.hpp"
 #include "canshield/ecu_simulator.hpp"
+#include "canshield/proprietary_protocol.hpp"
 #include "canshield/security_monitor.hpp"
 #include "test_framework.hpp"
 
@@ -136,6 +137,41 @@ TEST_CASE("TimingDetector flags an arrival faster than tolerance allows") {
 
     f.timestamp_us = 1000;  // 1ms later, well under the 10ms tolerance floor
     td.inspect(f, out);
+    CHECK_TRUE(!out.empty());
+}
+
+TEST_CASE("UnknownIdDetector flags an id absent from the bus matrix") {
+    MessageCatalog cat = default_catalog();
+    UnknownIdDetector ud(cat);
+    CanFrame known;
+    known.id = 0x100;  // present in the default catalog
+    std::vector<Alert> out;
+    ud.inspect(known, out);
+    CHECK_TRUE(out.empty());
+
+    CanFrame unknown;
+    unknown.id = 0x999;  // not present
+    ud.inspect(unknown, out);
+    CHECK_TRUE(!out.empty());
+}
+
+TEST_CASE("CounterDetector flags a rolling counter that skips") {
+    MessageCatalog cat = default_catalog();
+    const MessageDef* m = nullptr;
+    for (auto& kv : cat.messages()) if (kv.has_integrity) { m = &kv; break; }
+    CHECK_TRUE(m != nullptr);
+
+    CounterDetector cd(cat);
+    CanFrame f;
+    f.id = m->id;
+    f.dlc = m->dlc;
+    proto::set_rolling_counter(f, m->dlc, 0);
+    std::vector<Alert> out;
+    cd.inspect(f, out);
+    CHECK_TRUE(out.empty());  // first frame just seeds the counter
+
+    proto::set_rolling_counter(f, m->dlc, 5);  // skips ahead instead of 0->1
+    cd.inspect(f, out);
     CHECK_TRUE(!out.empty());
 }
 
