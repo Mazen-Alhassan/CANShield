@@ -139,4 +139,49 @@ TEST_CASE("TimingDetector flags an arrival faster than tolerance allows") {
     CHECK_TRUE(!out.empty());
 }
 
+TEST_CASE("PhysicsConsistencyDetector flags wheel speed disagreeing with vehicle speed") {
+    PhysicsConsistencyDetector pd;
+    std::vector<Alert> out;
+
+    CanFrame speed;
+    speed.id = 0x400;
+    speed.dlc = 4;
+    speed.set_be(0, 2, 0);  // vehicle stopped
+    pd.inspect(speed, out);
+    CHECK_TRUE(out.empty());  // only one of the two signals cached so far
+
+    CanFrame wheel;
+    wheel.id = 0x200;
+    wheel.dlc = 8;
+    wheel.data[0] = 0x64;
+    wheel.data[1] = 0x06;
+    wheel.data[2] = 0x40;  // both front wheels read ~100 km/h
+    pd.inspect(wheel, out);
+    CHECK_TRUE(!out.empty());  // 100 km/h wheel speed vs a stopped vehicle
+}
+
+TEST_CASE("PhysicsConsistencyDetector flags high rpm at standstill") {
+    PhysicsConsistencyDetector pd;
+    std::vector<Alert> out;
+
+    CanFrame speed;
+    speed.id = 0x400;
+    speed.dlc = 4;
+    speed.set_be(0, 2, 0);
+    pd.inspect(speed, out);
+
+    CanFrame wheel;
+    wheel.id = 0x200;
+    wheel.dlc = 8;  // all-zero payload -> both wheel speeds read 0
+    pd.inspect(wheel, out);
+    CHECK_TRUE(out.empty());  // stopped and wheels agree, nothing implausible yet
+
+    CanFrame rpm;
+    rpm.id = 0x100;
+    rpm.dlc = 8;
+    rpm.set_be(0, 2, 20000);  // 20000 * 0.25 = 5000 rpm
+    pd.inspect(rpm, out);
+    CHECK_TRUE(!out.empty());  // engine racing while stationary is implausible
+}
+
 int main() { return canshield::test::run_all(); }
