@@ -139,4 +139,34 @@ TEST_CASE("TimingDetector flags an arrival faster than tolerance allows") {
     CHECK_TRUE(!out.empty());
 }
 
+TEST_CASE("DiagnosticDetector flags diagnostic traffic above the per-window cap") {
+    DiagnosticDetector dd;  // defaults: 1s window, 20/window cap
+    std::vector<Alert> out;
+    CanFrame f;
+    f.id = 0x7E0;  // OBD physical request, inside the diagnostic id band
+    f.dlc = 8;
+    for (int i = 0; i < 20; ++i) {
+        f.timestamp_us = static_cast<std::uint64_t>(i) * 1000;  // well inside the window
+        dd.inspect(f, out);
+    }
+    CHECK_TRUE(out.empty());  // right at the cap, not yet exceeding it
+
+    f.timestamp_us = 20000;
+    dd.inspect(f, out);
+    CHECK_TRUE(!out.empty());  // 21st hit in the window exceeds the cap
+}
+
+TEST_CASE("DiagnosticDetector ignores traffic outside the diagnostic id band") {
+    DiagnosticDetector dd;
+    std::vector<Alert> out;
+    CanFrame f;
+    f.id = 0x100;  // not in [0x700, 0x7FF]
+    f.dlc = 8;
+    for (int i = 0; i < 50; ++i) {
+        f.timestamp_us = static_cast<std::uint64_t>(i) * 1000;
+        dd.inspect(f, out);
+    }
+    CHECK_TRUE(out.empty());
+}
+
 int main() { return canshield::test::run_all(); }
