@@ -4,7 +4,7 @@ a small project i made to learn how car networks get attacked and how you'd catc
 
 it fakes a car's ecus talking over can bus, throws 10 attacks at the bus, and a c++ monitor tries to catch them live. runs on a laptop with a fake bus or on a raspberry pi with a real one, same code either way.
 
-![the monitor catching an rpm spoof](docs/images/monitor.png)
+<p><img src="docs/images/monitor.png" alt="the monitor catching an rpm spoof" width="67%"><img src="docs/images/pi.jpg" alt="the raspberry pi it runs on" width="32%"></p>
 
 ## what's in it
 
