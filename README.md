@@ -54,6 +54,13 @@ quick demo (make an attack file then run the monitor on it):
 ./build/canshield_monitor --in data/trace.csv
 ```
 
+`canshield_monitor` takes `--in FILE` or `--iface IFACE` and a few optional flags: `--max-print N`
+caps how many alerts print before they're suppressed (default 40), `--json` switches alert output
+to one JSON object per line instead of the default text format, `--summary-only` skips per-alert
+output entirely and just prints the end-of-run summary, and `--rate-window-ms`/`--rate-burst` and
+`--diag-window-ms`/`--diag-max` tune the rate and diagnostic detectors' window size and threshold.
+`--help` prints the full usage line.
+
 offensive demo (recover a diagnostic ecu's seed/key and unlock it):
 
 ```sh
