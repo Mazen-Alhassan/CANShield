@@ -16,13 +16,16 @@ using namespace canshield;
 static std::atomic<bool> g_stop{false};
 static void on_sigint(int) { g_stop = true; }
 
-static void summary(SecurityMonitor& mon) {
+static void summary(SecurityMonitor& mon, std::uint64_t malformed_lines = 0) {
     std::map<std::string, std::uint64_t> by_det;
     for (auto& a : mon.alerts()) by_det[a.detector]++;
 
     std::printf("\n---- summary ----\n");
     std::printf("frames processed : %llu\n",
                 (unsigned long long)mon.frames_processed());
+    if (malformed_lines > 0)
+        std::printf("lines skipped    : %llu (malformed csv)\n",
+                    (unsigned long long)malformed_lines);
     std::printf("alerts raised    : %llu\n",
                 (unsigned long long)mon.alerts_raised());
     for (auto& kv : by_det)
@@ -106,10 +109,14 @@ int main(int argc, char** argv) {
         }
         std::string line;
         CanFrame frame;
+        std::uint64_t malformed_lines = 0;
         while (std::getline(f, line)) {
             if (line.empty()) continue;
             if (CanFrame::from_csv(line, frame)) mon.process(frame);
+            else ++malformed_lines;
         }
+        summary(mon, malformed_lines);
+        return 0;
     } else if (!iface.empty()) {
         SocketCanTransport tx;
         if (!tx.open(iface)) {
