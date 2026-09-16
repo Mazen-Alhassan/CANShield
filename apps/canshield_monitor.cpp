@@ -41,7 +41,8 @@ int main(int argc, char** argv) {
         std::printf(
             "usage: canshield_monitor (--in trace.csv | --iface vcan0) "
             "[--max-print N] [--json] [--summary-only] [--rate-window-ms N] "
-            "[--rate-burst F] [--diag-window-ms N] [--diag-max N]\n");
+            "[--rate-burst F] [--diag-window-ms N] [--diag-max N] "
+            "[--timing-tol F]\n");
         return 0;
     }
     std::signal(SIGINT, on_sigint);
@@ -52,6 +53,7 @@ int main(int argc, char** argv) {
     std::uint64_t diag_window_us =
         static_cast<std::uint64_t>(args.geti("--diag-window-ms", 1000)) * 1000;
     int diag_max = static_cast<int>(args.geti("--diag-max", 20));
+    double timing_tol = args.getf("--timing-tol", 0.5);
 
     SecurityMonitor mon(default_catalog(), /*with_defaults=*/false);
     const MessageCatalog& cat = mon.catalog();
@@ -59,7 +61,7 @@ int main(int argc, char** argv) {
     mon.add_detector(std::make_unique<ProtocolDetector>(cat));
     mon.add_detector(std::make_unique<ChecksumDetector>(cat));
     mon.add_detector(std::make_unique<CounterDetector>(cat));
-    mon.add_detector(std::make_unique<TimingDetector>(cat));
+    mon.add_detector(std::make_unique<TimingDetector>(cat, timing_tol));
     mon.add_detector(std::make_unique<RangeDetector>(cat));
     mon.add_detector(std::make_unique<RateDetector>(cat, rate_window_us, rate_burst));
     mon.add_detector(std::make_unique<PhysicsConsistencyDetector>());
