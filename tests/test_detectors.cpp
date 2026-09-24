@@ -4,6 +4,7 @@
 
 #include "canshield/attack_injector.hpp"
 #include "canshield/ecu_simulator.hpp"
+#include "canshield/proprietary_protocol.hpp"
 #include "canshield/security_monitor.hpp"
 #include "test_framework.hpp"
 
@@ -182,6 +183,36 @@ TEST_CASE("PhysicsConsistencyDetector flags high rpm at standstill") {
     rpm.set_be(0, 2, 20000);  // 20000 * 0.25 = 5000 rpm
     pd.inspect(rpm, out);
     CHECK_TRUE(!out.empty());  // engine racing while stationary is implausible
+}
+
+TEST_CASE("ChecksumDetector flags a corrupted checksum byte") {
+    MessageCatalog cat = default_catalog();
+    ChecksumDetector cd(cat);
+    CanFrame f;
+    f.id = 0x400;  // IC_VehicleSpeed, has_integrity, dlc 4
+    f.dlc = 4;
+    proto::apply_integrity(f, f.dlc, 0);
+    std::vector<Alert> out;
+    cd.inspect(f, out);
+    CHECK_TRUE(out.empty());  // valid checksum raises nothing
+
+    f.data[proto::checksum_byte(f.dlc)] ^= 0xFF;  // corrupt it
+    cd.inspect(f, out);
+    CHECK_TRUE(!out.empty());
+}
+
+TEST_CASE("RateDetector flags a burst above the expected rate for an id") {
+    MessageCatalog cat = default_catalog();
+    RateDetector rd(cat);  // default 100ms window, 3x burst factor
+    CanFrame f;
+    f.id = 0x400;  // IC_VehicleSpeed, 20ms period -> ~5 expected per 100ms window
+    f.dlc = 4;
+    std::vector<Alert> out;
+    for (int i = 0; i < 20; ++i) {
+        f.timestamp_us = i * 1000;  // 1ms apart, all inside the 100ms window
+        rd.inspect(f, out);
+    }
+    CHECK_TRUE(!out.empty());
 }
 
 int main() { return canshield::test::run_all(); }

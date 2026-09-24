@@ -57,6 +57,18 @@ TEST_CASE("rolling counter succession") {
     CHECK_FALSE(proto::counter_follows(3, 3));  // repeat
 }
 
+TEST_CASE("proprietary codec is a safe no-op below its minimum dlc") {
+    CanFrame f(0x100, 0, {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88});
+    CHECK_EQ(proto::rolling_counter(f, 0), 0);   // dlc < 2: no counter byte
+    proto::set_rolling_counter(f, 0, 7);         // must not touch the payload
+    CHECK_EQ(f.data[0], 0x11);
+    CHECK_FALSE(proto::checksum_valid(f, 0));    // dlc < 1: never valid
+
+    CHECK_EQ(proto::rolling_counter(f, 1), 0);   // dlc == 1: still no counter byte
+    proto::set_rolling_counter(f, 1, 7);
+    CHECK_EQ(f.data[0], 0x11);
+}
+
 TEST_CASE("simulator produces well-formed, valid frames for known ids") {
     EcuSimulator sim(default_catalog());
     std::uint64_t good = 0, total = 0;
