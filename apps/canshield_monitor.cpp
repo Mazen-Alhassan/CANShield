@@ -16,13 +16,16 @@ using namespace canshield;
 static std::atomic<bool> g_stop{false};
 static void on_sigint(int) { g_stop = true; }
 
-static void summary(SecurityMonitor& mon) {
+static void summary(SecurityMonitor& mon, std::uint64_t malformed_lines = 0) {
     std::map<std::string, std::uint64_t> by_det;
     for (auto& a : mon.alerts()) by_det[a.detector]++;
 
     std::printf("\n---- summary ----\n");
     std::printf("frames processed : %llu\n",
                 (unsigned long long)mon.frames_processed());
+    if (malformed_lines > 0)
+        std::printf("lines skipped    : %llu (malformed csv)\n",
+                    (unsigned long long)malformed_lines);
     std::printf("alerts raised    : %llu\n",
                 (unsigned long long)mon.alerts_raised());
     for (auto& kv : by_det)
@@ -41,7 +44,8 @@ int main(int argc, char** argv) {
         std::printf(
             "usage: canshield_monitor (--in trace.csv | --iface vcan0) "
             "[--max-print N] [--json] [--summary-only] [--rate-window-ms N] "
-            "[--rate-burst F] [--diag-window-ms N] [--diag-max N]\n");
+            "[--rate-burst F] [--diag-window-ms N] [--diag-max N] "
+            "[--timing-tol F]\n");
         return 0;
     }
     std::signal(SIGINT, on_sigint);
@@ -52,6 +56,7 @@ int main(int argc, char** argv) {
     std::uint64_t diag_window_us =
         static_cast<std::uint64_t>(args.geti("--diag-window-ms", 1000)) * 1000;
     int diag_max = static_cast<int>(args.geti("--diag-max", 20));
+    double timing_tol = args.getf("--timing-tol", 0.5);
 
     SecurityMonitor mon(default_catalog(), /*with_defaults=*/false);
     const MessageCatalog& cat = mon.catalog();
@@ -59,7 +64,7 @@ int main(int argc, char** argv) {
     mon.add_detector(std::make_unique<ProtocolDetector>(cat));
     mon.add_detector(std::make_unique<ChecksumDetector>(cat));
     mon.add_detector(std::make_unique<CounterDetector>(cat));
-    mon.add_detector(std::make_unique<TimingDetector>(cat));
+    mon.add_detector(std::make_unique<TimingDetector>(cat, timing_tol));
     mon.add_detector(std::make_unique<RangeDetector>(cat));
     mon.add_detector(std::make_unique<RateDetector>(cat, rate_window_us, rate_burst));
     mon.add_detector(std::make_unique<PhysicsConsistencyDetector>());
@@ -106,10 +111,14 @@ int main(int argc, char** argv) {
         }
         std::string line;
         CanFrame frame;
+        std::uint64_t malformed_lines = 0;
         while (std::getline(f, line)) {
             if (line.empty()) continue;
             if (CanFrame::from_csv(line, frame)) mon.process(frame);
+            else ++malformed_lines;
         }
+        summary(mon, malformed_lines);
+        return 0;
     } else if (!iface.empty()) {
         SocketCanTransport tx;
         if (!tx.open(iface)) {

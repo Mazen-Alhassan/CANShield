@@ -82,4 +82,14 @@ TEST_CASE("wrong key is rejected") {
     t.join();
 }
 
+TEST_CASE("request returns empty on timeout when nothing answers") {
+    auto bus = VirtualCanBus::create();
+    auto att_tx = bus->attach("att");
+    uds::UdsClient c(att_tx, diag::kObdPhysicalRequest, diag::kObdResponse);
+
+    // no UdsEcu attached to the bus, so no reply ever arrives
+    auto r = c.request({uds::kSecurityAccess, 0x01}, /*timeout_us=*/20000);
+    CHECK_TRUE(r.empty());
+}
+
 int main() { return canshield::test::run_all(); }
