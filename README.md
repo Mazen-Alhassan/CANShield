@@ -8,9 +8,9 @@ it fakes a car's ecus talking over can bus, throws 10 attacks at the bus, and a 
 
 ## what's in it
 
-- fake ecus (engine, abs, body) with a bit of physics so the numbers make sense
-- my own made up message format with a counter and checksum, which i then reverse engineered
-- 10 attacks: spoofing, replay, flooding, fuzzing, diag abuse, masquerade, speed freeze, checksum tamper, bus-off and a sneaky injection one
+- fake ecus (engine, abs, body) 
+- message format with a counter and checksum
+- 10 attacks: spoofing, replay, flooding, fuzzing, diag abuse, masquerade, speed freeze, checksum tamper, bus-off and an injection
 - a monitor with 9 checks: timing, rate, checksum, counter, range, unknown id, protocol, physics and diag
 - a small uds seed/key exploit that unlocks a fake diag ecu
 
@@ -50,7 +50,3 @@ make an attack and watch it get caught:
 ## on a pi
 
 run `scripts/setup_vcan.sh`, build, then start the sim in one terminal and `./build/canshield_monitor --iface vcan0` in another. more in `docs/deployment-raspberry-pi.md`.
-
-## more
-
-the writeups are in `docs/` if you want the details.
